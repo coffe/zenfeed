@@ -1,0 +1,5 @@
+textual>=0.85.0
+feedparser>=6.0.10
+beautifulsoup4>=4.12.0
+trafilatura>=1.6.0
+lxml>=4.9.0

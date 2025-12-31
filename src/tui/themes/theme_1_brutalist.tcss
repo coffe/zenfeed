@@ -1,0 +1,169 @@
+/* THEME 1: BRUTALIST MONO */
+
+/* Global Reset */
+* {
+    background: #000000;
+    color: #ffffff;
+    scrollbar-background: #000000;
+    scrollbar-color: #222222; 
+    scrollbar-size: 1 1;
+    scrollbar-gutter: stable;
+}
+
+Screen {
+    layout: vertical;
+}
+
+#main-layout {
+    layout: horizontal;
+    height: 100%;
+}
+
+/* SIDEBAR */
+#sidebar {
+    width: 25%;
+    height: 100%;
+    border: none;
+    background: #000000;
+}
+
+/* A: VERTICAL SEPARATOR */
+#vertical-sep-wrapper {
+    width: 3;
+    height: 100%;
+    align: center middle;
+}
+
+.vertical-separator {
+    width: 1;
+    height: 70%; 
+    border-left: solid white; 
+    background: #000000;
+}
+
+/* RIGHT SIDE CONTAINER */
+#article-list {
+    width: 1fr;
+    height: 100%;
+    border: none;
+    margin-bottom: 1; 
+    background: #000000;
+}
+
+/* B: SEARCH INPUT */
+#search-wrapper {
+    width: 100%;
+    height: 5;
+    align: center middle;
+    border: none;
+}
+
+#search_input {
+    width: 90%;
+    height: 3;
+    border: none;
+    border-bottom: solid white;
+    padding: 0 1;
+    background: #000000;
+}
+
+/* DATA TABLE */
+DataTable {
+    height: 1fr;
+    background: #000000;
+    border: none;
+}
+DataTable > .datatable--header {
+    background: #111111;
+    color: white;
+    text-style: bold;
+}
+DataTable > .datatable--cursor {
+    background: #333333;
+    color: white;
+}
+
+/* READER VIEW */
+ReaderScreen {
+    align: center middle;
+}
+#reader-container {
+    height: 100%;
+    border: none;
+    border-left: solid #333333; 
+    border-right: solid #333333;
+    padding: 1 4;
+}
+
+/* Reader Width Utilities */
+.reader-narrow { width: 50%; }
+.reader-medium { width: 75%; }
+.reader-wide { width: 95%; }
+
+/* SETTINGS (Clean List Style) */
+SettingsScreen {
+    align: center middle;
+}
+#settings-container {
+    width: 60%;
+    height: auto;
+    border: none;
+    padding: 2;
+    background: #000000;
+}
+
+.section-header {
+    text-style: bold;
+    color: #ffffff;
+    margin-top: 1;
+    margin-bottom: 1;
+}
+
+/* ListView Styling */
+ListView {
+    height: auto;
+    border: none;
+    padding: 0;
+}
+
+ListItem {
+    padding: 1 2;
+    background: #000000;
+    color: #ffffff;
+}
+
+/* The selected item gets the turquoise treatment */
+ListItem:hover, ListItem.--highlight {
+    background: #111111;
+    color: #00e5ff;
+    text-style: bold;
+}
+
+#close_btn {
+    width: 100%;
+    margin-top: 2;
+    border: none;
+    background: #111111;
+    color: #ffffff;
+}
+#close_btn:focus {
+    background: #000000;
+    color: #00e5ff;
+    text-style: bold;
+}
+
+/* NOTIFICATIONS (TOAST) */
+Toast {
+    background: #000000;
+    color: #00e5ff;
+    border: solid white;
+    padding: 1 2;
+    margin: 1;
+    min-width: 30;
+}
+
+Toast.-information, Toast.-warning, Toast.-error {
+    background: #000000;
+    color: #00e5ff;
+    border: solid white;
+}

@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.Python
+build/
+dist/
+*.spec
+
+# Databaser (Viktigt: Pusha inte din lokala data)
+*.db
+*.sqlite3
+
+# Loggar och temporära filer
+*.log
+log.txt
+.cache/
+
+# Design och anteckningar (enligt önskemål om att bara ha med det som behövs)
+ideer.md
+settings_mockups.md
+settings_redesign.md
+*.png
+*_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*
+
+# OS filer
+.DS_Store
+.idea/
+.vscode/
