@@ -1,49 +1,165 @@
-/* THEME 2: BOLD DIVIDER */
+/* THEME 1: BRUTALIST MONO */
 
+/* Global Reset */
 * {
     background: #000000;
     color: #ffffff;
     scrollbar-background: #000000;
-    scrollbar-color: #444444;
+    scrollbar-color: #222222; 
     scrollbar-size: 1 1;
     scrollbar-gutter: stable;
 }
 
-Screen { layout: vertical; }
-#main-layout { layout: horizontal; height: 100%; }
+Screen {
+    layout: vertical;
+}
 
-#sidebar { width: 25%; height: 100%; border: none; }
+#main-layout {
+    layout: horizontal;
+    height: 100%;
+}
 
-#vertical-sep-wrapper { width: 3; height: 100%; align: center middle; }
-.vertical-separator { width: 1; height: 70%; border-left: heavy white; }
+/* SIDEBAR */
+#sidebar {
+    width: 25%;
+    height: 100%;
+    border: none;
+    background: #000000;
+}
 
-#article-list { width: 1fr; height: 100%; border: none; margin-bottom: 1; }
+/* A: VERTICAL SEPARATOR */
+#vertical-sep-wrapper {
+    width: 3;
+    height: 100%;
+    align: center middle;
+}
 
-#search-wrapper { width: 100%; height: 5; align: center middle; }
-#search_input { width: 90%; height: 3; border: none; border-bottom: heavy white; padding: 0 1; }
+.vertical-separator {
+    width: 1;
+    height: 70%; 
+    border-left: solid white; 
+    background: #000000;
+}
 
-DataTable { height: 1fr; background: #000000; }
-DataTable > .datatable--header { background: #ffffff; color: black; text-style: bold; }
-DataTable > .datatable--cursor { background: #ffffff; color: black; }
+/* RIGHT SIDE CONTAINER */
+#article-list {
+    width: 1fr;
+    height: 100%;
+    border: none;
+    margin-bottom: 1; 
+    background: #000000;
+}
 
-ReaderScreen { align: center middle; }
-#reader-container { height: 100%; border: none; border-left: heavy #555555; border-right: heavy #555555; padding: 1 4; }
+/* B: SEARCH INPUT */
+#search-wrapper {
+    width: 100%;
+    height: 5;
+    align: center middle;
+    border: none;
+}
+
+#search_input {
+    width: 90%;
+    height: 3;
+    border: none;
+    border-bottom: solid white;
+    padding: 0 1;
+    background: #000000;
+}
+
+/* DATA TABLE */
+DataTable {
+    height: 1fr;
+    background: #000000;
+    border: none;
+}
+DataTable > .datatable--header {
+    background: #111111;
+    color: white;
+    text-style: bold;
+}
+DataTable > .datatable--cursor {
+    background: #333333;
+    color: white;
+}
+
+/* READER VIEW */
+ReaderScreen {
+    align: center middle;
+}
+#reader-container {
+    height: 100%;
+    border: none;
+    border-left: solid #333333; 
+    border-right: solid #333333;
+    padding: 1 4;
+}
+
+/* Reader Width Utilities */
 .reader-narrow { width: 50%; }
 .reader-medium { width: 75%; }
 .reader-wide { width: 95%; }
 
-/* SETTINGS (Clean List Style) */
-SettingsScreen { align: center middle; }
-#settings-container { width: 60%; height: auto; border: none; padding: 2; background: #000000; }
-.section-header { text-style: bold; color: #ffffff; margin-top: 1; margin-bottom: 1; }
+/* SETTINGS (Strict Left Minimal) */
+SettingsScreen {
+    align: left top;
+    background: #000000;
+}
 
-ListView { height: auto; border: none; padding: 0; }
-ListItem { padding: 1 2; background: #000000; color: #ffffff; }
-ListItem:hover, ListItem.--highlight { background: #111111; color: #00e5ff; text-style: bold; }
+#settings-container {
+    width: 40%;
+    height: 100%;
+    align: left top;
+    padding: 2;
+    background: #000000;
+    border: none;
+}
 
-#close_btn { width: 100%; margin-top: 2; border: none; background: #111111; color: #ffffff; }
-#close_btn:focus { background: #000000; color: #00e5ff; text-style: bold; }
+.section-header {
+    margin-bottom: 2;
+    color: #888888;
+    text-style: bold;
+    text-align: left;
+}
+
+.settings-btn {
+    width: 100%;
+    height: 1;
+    border: none;
+    background: #000000;
+    color: #aaaaaa;
+    content-align: left middle;
+    text-align: left;
+    padding-left: 1;
+    margin-bottom: 1;
+    border-left: solid #000000; /* Invisible border placeholder */
+}
+
+.settings-btn:focus {
+    background: #111111;
+    color: #00e5ff;
+    text-style: bold;
+    border-left: thick #00e5ff;
+}
+
+.spacer { height: 2; }
 
 /* NOTIFICATIONS (TOAST) */
-Toast { background: #000000; color: #00e5ff; border: heavy white; padding: 1 2; margin: 1; min-width: 30; }
-Toast.-information, Toast.-warning, Toast.-error { background: #000000; color: #00e5ff; border: heavy white; }
+Toast {
+    background: #000000;
+    color: #00e5ff;
+    border: solid white;
+    padding: 1 2;
+    margin: 1;
+    min-width: 30;
+}
+
+Toast.-information, Toast.-warning, Toast.-error {
+    background: #000000;
+    color: #00e5ff;
+    border: solid white;
+}
+
+.hidden {
+    display: none;
+}

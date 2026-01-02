@@ -5,21 +5,28 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 class RSSFetcher:
+    """
+    Handles fetching and parsing of RSS/Atom feeds.
+    """
+
     def parse_feed(self, url: str) -> Optional[Dict[str, Any]]:
         """
-        Hämtar och parsar en RSS-feed.
-        Returnerar en dict med 'feed' (metadata) och 'entries' (artiklar).
+        Fetches and parses an RSS feed from the given URL.
+        
+        Returns:
+            A dictionary containing 'title' (feed metadata) and 'entries' (list of articles),
+            or None if fetching/parsing fails.
         """
         try:
-            # Feedparser hanterar nätverk och parsing
+            # feedparser handles network request and parsing
             feed_data = feedparser.parse(url)
 
             if feed_data.bozo:
-                # 'bozo' sätts till 1 om det är problem med XML-strukturen, 
-                # men ofta går det att läsa ändå. Vi loggar bara varningen mentalt.
+                # 'bozo' is set to 1 if there is a malformed XML structure,
+                # but often the content is still readable. We just ignore it for now.
                 pass
             
-            # Kontrollera att vi faktiskt fick data
+            # Check that we actually got some data
             if not feed_data.feed.get('title') and not feed_data.entries:
                 return None
 
@@ -33,33 +40,43 @@ class RSSFetcher:
             }
 
         except Exception as e:
-            # I en riktig app vill vi logga detta ordentligt
+            # In a production app, we should log this properly
             print(f"Error fetching {url}: {e}")
             return None
 
+    def get_feed_title(self, url: str) -> Optional[str]:
+        """Fetches only the title of the feed."""
+        try:
+            feed_data = feedparser.parse(url)
+            if feed_data.bozo and not feed_data.feed:
+                 return None
+            return feed_data.feed.get("title")
+        except Exception:
+            return None
+
     def _process_entry(self, entry: Any) -> Dict[str, Any]:
-        """Extraherar och städar relevant data från en post."""
+        """Extracts and cleans relevant data from a feed entry."""
         
-        # Hantera datum
+        # Handle dates
         published_at = datetime.now() # Fallback
         if hasattr(entry, 'published_parsed') and entry.published_parsed:
             published_at = datetime.fromtimestamp(mktime(entry.published_parsed))
         elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
             published_at = datetime.fromtimestamp(mktime(entry.updated_parsed))
 
-        # Hitta innehåll (summary eller content)
+        # Find content (summary or full content)
         content_html = ""
         if hasattr(entry, 'content'):
-            # Atom feeds har ofta en lista av content, vi tar den första
+            # Atom feeds often have a list of content objects; we take the first one
             content_html = entry.content[0].value
         elif hasattr(entry, 'summary'):
             content_html = entry.summary
         else:
             content_html = "No content available."
 
-        # Tvätta innehållet (HTML -> Text)
-        # För MVP gör vi om det till ren text. 
-        # I framtiden kan vi använda 'markdownify' för att behålla länkar/fetstil.
+        # Clean the content (HTML -> Text)
+        # For the MVP we convert it to plain text.
+        # In the future, we could use 'markdownify' to preserve links/bold text.
         clean_content = self._html_to_text(content_html)
 
         return {
@@ -70,7 +87,7 @@ class RSSFetcher:
         }
 
     def _html_to_text(self, html: str) -> str:
-        """Använder BeautifulSoup för att strippa tags och få ren text."""
+        """Uses BeautifulSoup to strip tags and extract plain text."""
         if not html:
             return ""
         soup = BeautifulSoup(html, "html.parser")

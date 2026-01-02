@@ -25,13 +25,6 @@ class SearchInput(Input):
     def on_blur(self, event) -> None:
         self.can_focus = False
 
-class UrlInput(Input):
-    """An input that emits a custom message when submitted or changed (for lazy updates)."""
-    
-    # We will just use Submitted for now, or on_blur if we could easily hook it.
-    # Textual's Input doesn't emit a dedicated 'Blur' message.
-    pass
-
 class AddFeedScreen(Screen):
     """Screen for adding a new RSS feed."""
     
@@ -47,71 +40,16 @@ class AddFeedScreen(Screen):
             yield Label("Feed URL:")
             yield Input(placeholder="https://example.com/rss.xml", id="feed_url")
             
-            yield Label("Title (Optional - Auto-fetched):")
+            yield Label("Title (Optional):")
             yield Input(placeholder="My Tech News", id="feed_title")
             
             yield Label("Category:")
-            yield Select([], prompt="Select Category", id="category_select")
-            yield Input(placeholder="New Category Name", id="feed_category_new", classes="hidden")
+            yield Input(placeholder="Tech", value="Uncategorized", id="feed_category")
             
             with Horizontal(id="dialog-buttons"):
                 yield Button("Add Feed", variant="primary", id="add_btn")
                 yield Button("Cancel", id="cancel_btn")
         yield Footer()
-
-    def on_mount(self):
-        # Populate categories
-        cats = self.app.db.get_categories()
-        options = [(c, c) for c in cats]
-        options.append(("➕ New Category...", "new_category_marker"))
-        
-        select = self.query_one("#category_select")
-        select.set_options(options)
-        
-        # Default to "Uncategorized" if exists, else first
-        if "Uncategorized" in cats:
-            select.value = "Uncategorized"
-
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.input.id == "feed_url":
-            # User pressed enter on URL, try to fetch title
-            self._trigger_title_fetch()
-            self.query_one("#feed_title").focus()
-            
-        elif event.input.id == "feed_title":
-            self.query_one("#category_select").focus()
-            
-        elif event.input.id == "feed_category_new":
-            self._submit_feed()
-
-    def _trigger_title_fetch(self):
-        url = self.query_one("#feed_url").value.strip()
-        if url:
-            self.notify("🔍 Fetching title...")
-            self.fetch_title_worker(url)
-
-    @work(exclusive=True, thread=True)
-    def fetch_title_worker(self, url: str):
-        title = self.app.fetcher.get_feed_title(url)
-        if title:
-            self.app.call_from_thread(self._update_title_input, title)
-        else:
-             self.app.call_from_thread(self.notify, "Could not fetch title automatically.", severity="warning")
-
-    def _update_title_input(self, title: str):
-        inp = self.query_one("#feed_title")
-        if not inp.value: # Only update if empty
-            inp.value = title
-            self.notify(f"Found title: {title}")
-
-    def on_select_changed(self, event: Select.Changed) -> None:
-        if event.select.id == "category_select":
-            new_input = self.query_one("#feed_category_new")
-            if event.value == "new_category_marker":
-                new_input.remove_class("hidden")
-                new_input.focus()
-            else:
-                new_input.add_class("hidden")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "cancel_btn":
@@ -119,24 +57,27 @@ class AddFeedScreen(Screen):
         elif event.button.id == "add_btn":
             self._submit_feed()
 
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        # If enter is pressed in the last input, submit
+        if event.input.id == "feed_category":
+            self._submit_feed()
+        else:
+            # Move focus to next input
+            if event.input.id == "feed_url":
+                self.query_one("#feed_title").focus()
+            elif event.input.id == "feed_title":
+                self.query_one("#feed_category").focus()
+
     def _submit_feed(self):
         url = self.query_one("#feed_url").value.strip()
         title = self.query_one("#feed_title").value.strip()
-        
-        select_val = self.query_one("#category_select").value
-        if select_val == "new_category_marker":
-            category = self.query_one("#feed_category_new").value.strip()
-        else:
-            category = select_val
-
-        category = category or "Uncategorized"
+        category = self.query_one("#feed_category").value.strip() or "Uncategorized"
 
         if not url:
             self.notify("URL is required.", severity="error")
             return
 
-        # Fetch title if empty (blocking here or launch worker? 
-        # Better to just use URL as title if still empty to keep it responsive)
+        # If title is empty, use the URL or a placeholder initially
         if not title:
             title = url
 
@@ -145,76 +86,76 @@ class AddFeedScreen(Screen):
             if feed_id != -1:
                 self.notify(f"Added feed: {title}")
                 self.app.pop_screen()
-                self.app.action_refresh_feeds()
+                self.app.action_refresh_feeds() # Will fetch real title and articles
             else:
                 self.notify("Feed already exists or invalid.", severity="warning")
         except Exception as e:
             self.notify(f"Error adding feed: {e}", severity="error")
 
 class SettingsScreen(Screen):
+    """Screen for configuring ZenFeed preferences."""
+    
     BINDINGS = [
         ("escape", "app.pop_screen", "Back"),
         ("q", "app.pop_screen", "Back"),
-        ("up", "up", "Up"),
-        ("down", "down", "Down"),
     ]
 
     def __init__(self, db_manager: DatabaseManager):
         super().__init__()
         self.db = db_manager
 
-    def action_up(self):
-        self.focus_previous()
-    
-    def action_down(self):
-        self.focus_next()
-
     def compose(self) -> ComposeResult:
         yield Header()
         with Container(id="settings-container"):
-            yield Label("SETTINGS", classes="section-header")
+            # UI Section
+            yield Label("## UI:", classes="section-header")
             
-            yield Button(self._get_theme_label(), id="btn_theme", classes="settings-btn")
-            yield Button(self._get_width_label(), id="btn_width", classes="settings-btn")
-            yield Button(self._get_ai_label(), id="btn_ai", classes="settings-btn")
+            with ListView(id="settings-list"):
+                yield ListItem(Label(self._get_theme_label()), id="setting-theme")
+                yield ListItem(Label(self._get_width_label()), id="setting-width")
+                
+            yield Static("\n")
             
-            yield Static(" ", classes="spacer")
-            yield Button("Close", variant="primary", id="close_btn", classes="settings-btn")
+            yield Label("## FEATURES:", classes="section-header")
+            with ListView(id="features-list"):
+                yield ListItem(Label(self._get_ai_label()), id="setting-ai")
+
+            yield Static("\n")
+            yield Button("Close", variant="primary", id="close_btn")
         yield Footer()
 
     def _get_theme_label(self):
         val = self.db.get_setting("theme", "theme_1_brutalist")
         clean_val = val.replace("theme_", "").replace("_", " ").title()
+        # Remove number prefix if present
         parts = clean_val.split(" ")
-        if parts[0].isdigit(): clean_val = " ".join(parts[1:])
-        return f"Theme: {clean_val}"
+        if parts[0].isdigit():
+            clean_val = " ".join(parts[1:])
+        return f"Theme ................ {clean_val}"
 
     def _get_width_label(self):
         val = self.db.get_setting("reader_width", "Medium")
-        return f"Reader Width: {val}"
+        return f"Reader Width ......... {val}"
 
     def _get_ai_label(self):
         val = self.db.get_bool_setting("enable_ai_briefing", False)
         status = "ON" if val else "OFF"
-        return f"AI Briefing: {status}"
+        return f"AI Briefing .......... {status}"
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        btn_id = event.button.id
+    def on_list_view_selected(self, event: ListView.Selected):
+        item_id = event.item.id
         
-        if btn_id == "btn_theme":
+        if item_id == "setting-theme":
             self._cycle_theme()
-            event.button.label = self._get_theme_label()
+            event.item.query_one(Label).update(self._get_theme_label())
             
-        elif btn_id == "btn_width":
+        elif item_id == "setting-width":
             self._cycle_width()
-            event.button.label = self._get_width_label()
+            event.item.query_one(Label).update(self._get_width_label())
             
-        elif btn_id == "btn_ai":
+        elif item_id == "setting-ai":
             self._toggle_ai()
-            event.button.label = self._get_ai_label()
-            
-        elif btn_id == "close_btn":
-            self.app.pop_screen()
+            event.item.query_one(Label).update(self._get_ai_label())
 
     def _cycle_theme(self):
         themes = ["theme_1_brutalist", "theme_2_bold", "theme_3_dashed", "theme_4_double"]
@@ -226,8 +167,6 @@ class SettingsScreen(Screen):
             new_theme = themes[0]
         
         self.db.set_setting("theme", new_theme)
-        # Note: Theme change requires restart or complex reload, notify user?
-        # For now we just save it.
 
     def _cycle_width(self):
         opts = ["Narrow", "Medium", "Wide"]
@@ -243,6 +182,10 @@ class SettingsScreen(Screen):
         curr = self.db.get_bool_setting("enable_ai_briefing", False)
         new_val = not curr
         self.db.set_setting("enable_ai_briefing", str(new_val))
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "close_btn":
+            self.app.pop_screen()
 
 class ReaderScreen(Screen):
     """Screen for reading an article in 'Zen Mode'."""
@@ -629,7 +572,7 @@ class ZenFeedApp(App):
         tree.root.expand()
         
         # Add "Saved" Node at the top
-        tree.root.add_leaf("Saved for Later", data={"type": "saved"})
+        tree.root.add_leaf("⭐ Saved for Later", data={"type": "saved"})
         
         feeds = self.db.get_feeds()
         unread_counts = self.db.get_unread_counts()
@@ -647,12 +590,12 @@ class ZenFeedApp(App):
                 cat_unread += unread_counts.get(feed['id'], 0)
             
             cat_count_str = f" ({cat_unread})" if cat_unread > 0 else ""
-            cat_node = tree.root.add(f"{cat}{cat_count_str}", expand=True, data={"type": "category", "name": cat})
+            cat_node = tree.root.add(f"📁 {cat}{cat_count_str}", expand=True, data={"type": "category", "name": cat})
             
             for feed in feed_list:
                 count = unread_counts.get(feed['id'], 0)
                 count_str = f" ({count})" if count > 0 else ""
-                label = f"{feed['title']}{count_str}"
+                label = f"📰 {feed['title']}{count_str}"
                 cat_node.add_leaf(label, data={"type": "feed", "feed_id": feed['id']})
 
     def refresh_article_list(self, feed_id: int = None, category: str = None, filter_mode: str = "all", search_query: str = None):

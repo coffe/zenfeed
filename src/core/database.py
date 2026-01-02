@@ -1,27 +1,49 @@
 import sqlite3
+import os
+from pathlib import Path
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
 class DatabaseManager:
-    def __init__(self, db_path: str = "zenfeed.db"):
-        self.db_path = db_path
+    """
+    Manages the SQLite database for ZenFeed, handling storage of feeds, articles, and settings.
+    """
+    def __init__(self, db_path: str = None):
+        """
+        Initialize the DatabaseManager.
+        
+        Args:
+            db_path: Optional custom path for the database file. 
+                     If None, defaults to ~/.config/zenfeed/zenfeed.db
+        """
+        if db_path is None:
+            # Determine config directory
+            config_dir = Path.home() / ".config" / "zenfeed"
+            config_dir.mkdir(parents=True, exist_ok=True)
+            self.db_path = str(config_dir / "zenfeed.db")
+        else:
+            self.db_path = db_path
+            
         self._create_tables()
         self._migrate_schema()
         self._create_indexes()
 
     def _get_connection(self):
+        """Creates and returns a new database connection with Row factory."""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
 
     def _create_tables(self):
-        """Initierar databasschemat (tabeller) om det inte finns."""
+        """Initializes the database schema (tables) if they do not exist."""
         schema = """
         CREATE TABLE IF NOT EXISTS feeds (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             url TEXT UNIQUE NOT NULL,
             title TEXT,
             category TEXT DEFAULT 'Uncategorized',
+            icon_url TEXT,
+            last_fetched TIMESTAMP,
             added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -48,7 +70,7 @@ class DatabaseManager:
             conn.executescript(schema)
 
     def _create_indexes(self):
-        """Skapar index efter att tabeller och kolumner är på plats."""
+        """Creates indexes after tables and columns are in place."""
         indexes = """
         CREATE INDEX IF NOT EXISTS idx_articles_feed_id ON articles(feed_id);
         CREATE INDEX IF NOT EXISTS idx_articles_is_read ON articles(is_read);
@@ -58,41 +80,56 @@ class DatabaseManager:
             conn.executescript(indexes)
 
     def _migrate_schema(self):
-        """Enkel migrering för att lägga till is_saved om den saknas."""
+        """Performs schema migrations to add new columns if they are missing."""
         with self._get_connection() as conn:
+            # Migration for articles (is_saved)
             try:
                 conn.execute("SELECT is_saved FROM articles LIMIT 1")
             except sqlite3.OperationalError:
-                # Kolumnen saknas, lägg till den
                 conn.execute("ALTER TABLE articles ADD COLUMN is_saved BOOLEAN DEFAULT 0")
+
+            # Migration for feeds (icon_url, last_fetched)
+            try:
+                conn.execute("SELECT icon_url FROM feeds LIMIT 1")
+            except sqlite3.OperationalError:
+                conn.execute("ALTER TABLE feeds ADD COLUMN icon_url TEXT")
+            
+            try:
+                conn.execute("SELECT last_fetched FROM feeds LIMIT 1")
+            except sqlite3.OperationalError:
+                conn.execute("ALTER TABLE feeds ADD COLUMN last_fetched TIMESTAMP")
 
     # --- Settings Management ---
 
     def set_setting(self, key: str, value: str):
-        """Spara en inställning. Value sparas alltid som sträng."""
+        """Save a setting. Value is always stored as a string."""
         with self._get_connection() as conn:
             conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, str(value)))
 
     def get_setting(self, key: str, default: str = None) -> Optional[str]:
-        """Hämta en inställning som sträng."""
+        """Retrieve a setting as a string."""
         with self._get_connection() as conn:
             cursor = conn.execute("SELECT value FROM settings WHERE key = ?", (key,))
             row = cursor.fetchone()
             return row['value'] if row else default
 
     def get_bool_setting(self, key: str, default: bool = False) -> bool:
-        """Hjälpmetod för att hämta booleska inställningar."""
+        """Helper method to retrieve boolean settings."""
         val = self.get_setting(key)
         if val is None:
             return default
         return val.lower() in ('true', '1', 'yes', 'on')
 
-    def add_feed(self, url: str, title: str, category: str = "Uncategorized") -> int:
+    def add_feed(self, url: str, title: str, category: str = "Uncategorized", icon_url: str = None) -> int:
+        """
+        Add a new feed to the database.
+        Returns the ID of the new (or existing) feed.
+        """
         with self._get_connection() as conn:
             try:
                 cursor = conn.execute(
-                    "INSERT INTO feeds (url, title, category) VALUES (?, ?, ?)",
-                    (url, title, category)
+                    "INSERT INTO feeds (url, title, category, icon_url) VALUES (?, ?, ?, ?)",
+                    (url, title, category, icon_url)
                 )
                 return cursor.lastrowid
             except sqlite3.IntegrityError:
@@ -100,12 +137,29 @@ class DatabaseManager:
                 row = cursor.fetchone()
                 return row['id'] if row else -1
 
+    def delete_feed(self, feed_id: int) -> bool:
+        """Removes a feed and its articles."""
+        with self._get_connection() as conn:
+            cursor = conn.execute("DELETE FROM feeds WHERE id = ?", (feed_id,))
+            return cursor.rowcount > 0
+
     def get_feeds(self) -> List[Dict[str, Any]]:
+        """Retrieve all feeds, ordered by category and title."""
         with self._get_connection() as conn:
             cursor = conn.execute("SELECT * FROM feeds ORDER BY category, title")
             return [dict(row) for row in cursor.fetchall()]
 
-    def add_article(self, feed_id: int, title: str, url: str, content: str, published_at: str):
+    def get_categories(self) -> List[str]:
+        """Retrieves a list of unique categories."""
+        with self._get_connection() as conn:
+            cursor = conn.execute("SELECT DISTINCT category FROM feeds ORDER BY category")
+            return [row['category'] for row in cursor.fetchall() if row['category']]
+
+    def add_article(self, feed_id: int, title: str, url: str, content: str, published_at: str) -> bool:
+        """
+        Add an article to the database.
+        Returns True if added, False if it already exists (duplicate URL).
+        """
         with self._get_connection() as conn:
             try:
                 conn.execute(
@@ -120,6 +174,17 @@ class DatabaseManager:
                 return False
 
     def get_articles(self, feed_id: Optional[int] = None, category: Optional[str] = None, unread_only: bool = False, saved_only: bool = False, search_query: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+        """
+        Retrieve articles based on various filters.
+        
+        Args:
+            feed_id: Filter by specific feed ID.
+            category: Filter by specific category name.
+            unread_only: If True, return only unread articles.
+            saved_only: If True, return only saved articles.
+            search_query: Search term for title or content.
+            limit: Maximum number of articles to return.
+        """
         query = """
             SELECT a.*, f.title as feed_title 
             FROM articles a 
@@ -158,6 +223,7 @@ class DatabaseManager:
             return [dict(row) for row in cursor.fetchall()]
 
     def get_article_by_id(self, article_id: int) -> Optional[Dict[str, Any]]:
+        """Retrieve a single article by its ID."""
         query = """
             SELECT a.*, f.title as feed_title 
             FROM articles a 
@@ -170,17 +236,19 @@ class DatabaseManager:
             return dict(row) if row else None
 
     def mark_as_read(self, article_id: int, is_read: bool = True):
+        """Update the read status of an article."""
         with self._get_connection() as conn:
             conn.execute("UPDATE articles SET is_read = ? WHERE id = ?", (1 if is_read else 0, article_id))
 
     def update_article_content(self, article_id: int, full_text: str):
+        """Update the full text content of an article."""
         with self._get_connection() as conn:
             conn.execute("UPDATE articles SET full_content = ? WHERE id = ?", (full_text, article_id))
 
-    # --- Nya funktioner för Dashboard & Features ---
+    # --- New Functions for Dashboard & Features ---
 
     def toggle_saved(self, article_id: int) -> bool:
-        """Växlar sparat-status. Returnerar nya statusen."""
+        """Toggles the 'saved' status. Returns the new status (True=Saved)."""
         with self._get_connection() as conn:
             cursor = conn.execute("SELECT is_saved FROM articles WHERE id = ?", (article_id,))
             row = cursor.fetchone()
@@ -191,14 +259,14 @@ class DatabaseManager:
             return False
 
     def mark_feed_as_read(self, feed_id: int):
-        """Markera allt i en feed som läst."""
+        """Mark all articles in a feed as read."""
         with self._get_connection() as conn:
             conn.execute("UPDATE articles SET is_read = 1 WHERE feed_id = ?", (feed_id,))
 
     def mark_category_as_read(self, category: str):
-        """Markera allt i en kategori som läst."""
+        """Mark all articles in a specific category as read."""
         with self._get_connection() as conn:
-            # Subquery för att hitta alla articles som tillhör feeds i denna kategori
+            # Subquery to find all articles belonging to feeds in this category
             conn.execute("""
                 UPDATE articles 
                 SET is_read = 1 
@@ -206,12 +274,12 @@ class DatabaseManager:
             """, (category,))
 
     def mark_all_as_read(self):
-        """Markera ALLT som läst."""
+        """Mark ALL articles in the database as read."""
         with self._get_connection() as conn:
             conn.execute("UPDATE articles SET is_read = 1")
 
     def get_unread_counts(self) -> Dict[int, int]:
-        """Returnerar en dict {feed_id: count} med antal olästa artiklar."""
+        """Returns a dict {feed_id: count} with the number of unread articles per feed."""
         with self._get_connection() as conn:
             cursor = conn.execute("""
                 SELECT feed_id, COUNT(*) as count 

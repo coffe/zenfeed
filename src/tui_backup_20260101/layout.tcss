@@ -19,25 +19,6 @@ Screen {
     height: 100%;
 }
 
-/* TREE STYLING (Sidebar) - The Marker Style */
-Tree {
-    background: #000000;
-    color: #aaaaaa;
-    border: none;
-    padding: 0 1;
-}
-
-Tree:focus > .tree--cursor {
-    background: #00e5ff;
-    color: #000000;
-    text-style: bold;
-}
-
-Tree > .tree--cursor {
-    background: #222222;
-    color: #ffffff;
-}
-
 /* SIDEBAR */
 #sidebar {
     width: 25%;
@@ -152,31 +133,9 @@ ListItem {
 }
 
 /* The selected item gets the turquoise treatment */
-ListItem {
-    background: #000000;
-    color: #ffffff;
-}
-
-ListItem:hover, ListItem.--highlight, ListItem.-highlight {
-    background: #00e5ff;
-    color: #000000;
-    text-style: bold;
-}
-
-/* Force label text to be black when item is highlighted */
-ListItem:hover > Label, ListItem.--highlight > Label, ListItem.-highlight > Label {
-    color: #000000;
-    background: transparent;
-}
-
-/* Close Button Styling */
-#close_btn {
+ListItem:hover, ListItem.--highlight {
     background: #111111;
-    color: #ffffff;
-}
-#close_btn:focus {
-    background: #00e5ff;
-    color: #000000;
+    color: #00e5ff;
     text-style: bold;
 }
 

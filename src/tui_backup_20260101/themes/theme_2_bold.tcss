@@ -12,21 +12,6 @@
 Screen { layout: vertical; }
 #main-layout { layout: horizontal; height: 100%; }
 
-/* TREE STYLING (Sidebar) - The Marker Style */
-Tree {
-    background: #000000;
-    color: #aaaaaa;
-    border: none;
-    padding: 1;
-}
-
-Tree > .tree--cursor {
-    background: #111111;
-    color: #00e5ff;
-    border-left: heavy #00e5ff; /* Using heavy instead of wide for Bold theme */
-    text-style: bold;
-}
-
 #sidebar { width: 25%; height: 100%; border: none; }
 
 #vertical-sep-wrapper { width: 3; height: 100%; align: center middle; }
@@ -54,34 +39,7 @@ SettingsScreen { align: center middle; }
 
 ListView { height: auto; border: none; padding: 0; }
 ListItem { padding: 1 2; background: #000000; color: #ffffff; }
-/* The selected item gets the turquoise treatment */
-ListItem {
-    background: #000000;
-    color: #ffffff;
-}
-
-ListItem:hover, ListItem.--highlight, ListItem.-highlight {
-    background: #00e5ff;
-    color: #000000;
-    text-style: bold;
-}
-
-/* Force label text to be black when item is highlighted */
-ListItem:hover > Label, ListItem.--highlight > Label, ListItem.-highlight > Label {
-    color: #000000;
-    background: transparent;
-}
-
-/* Close Button Styling */
-#close_btn {
-    background: #111111;
-    color: #ffffff;
-}
-#close_btn:focus {
-    background: #00e5ff;
-    color: #000000;
-    text-style: bold;
-}
+ListItem:hover, ListItem.--highlight { background: #111111; color: #00e5ff; text-style: bold; }
 
 #close_btn { width: 100%; margin-top: 2; border: none; background: #111111; color: #ffffff; }
 #close_btn:focus { background: #000000; color: #00e5ff; text-style: bold; }

@@ -1,0 +1,49 @@
+/* THEME 4: DOUBLE ELEGANT */
+
+* {
+    background: #000000;
+    color: #ffffff;
+    scrollbar-background: #000000;
+    scrollbar-color: #333333;
+    scrollbar-size: 1 1;
+    scrollbar-gutter: stable;
+}
+
+Screen { layout: vertical; }
+#main-layout { layout: horizontal; height: 100%; }
+
+#sidebar { width: 25%; height: 100%; border: none; }
+
+#vertical-sep-wrapper { width: 3; height: 100%; align: center middle; }
+.vertical-separator { width: 1; height: 70%; border-left: double white; }
+
+#article-list { width: 1fr; height: 100%; border: none; margin-bottom: 1; }
+
+#search-wrapper { width: 100%; height: 5; align: center middle; }
+#search_input { width: 90%; height: 3; border: none; border-bottom: double white; padding: 0 1; }
+
+DataTable { height: 1fr; background: #000000; }
+DataTable > .datatable--header { background: #1a1a1a; color: white; text-style: italic bold; }
+DataTable > .datatable--cursor { background: #333333; color: white; }
+
+ReaderScreen { align: center middle; }
+#reader-container { height: 100%; border: none; border-left: double #444444; border-right: double #444444; padding: 1 4; }
+.reader-narrow { width: 50%; }
+.reader-medium { width: 75%; }
+.reader-wide { width: 95%; }
+
+/* SETTINGS (Clean List Style) */
+SettingsScreen { align: center middle; }
+#settings-container { width: 60%; height: auto; border: none; padding: 2; background: #000000; }
+.section-header { text-style: bold; color: #ffffff; margin-top: 1; margin-bottom: 1; }
+
+ListView { height: auto; border: none; padding: 0; }
+ListItem { padding: 1 2; background: #000000; color: #ffffff; }
+ListItem:hover, ListItem.--highlight { background: #111111; color: #00e5ff; text-style: bold; }
+
+#close_btn { width: 100%; margin-top: 2; border: none; background: #111111; color: #ffffff; }
+#close_btn:focus { background: #000000; color: #00e5ff; text-style: bold; }
+
+/* NOTIFICATIONS (TOAST) */
+Toast { background: #000000; color: #00e5ff; border: double white; padding: 1 2; margin: 1; min-width: 30; }
+Toast.-information, Toast.-warning, Toast.-error { background: #000000; color: #00e5ff; border: double white; }
