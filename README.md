@@ -1,6 +1,10 @@
 # ZenFeed (Alpha)
 
+![ZenFeed Screenshot](images/zedfeed.png)
+
 **ZenFeed** is a minimalist RSS reader for the terminal (TUI), built with Python and [Textual](https://textual.textualize.io/). It is designed to provide a calm and focused reading experience directly in your terminal.
+
+> **🚧 Work in Progress:** ZenFeed is currently in active development. We are constantly adding new features and polishing the interface. 
 
 > **⚠️ Alpha Status:** This project is under development. Features may change and bugs may occur.
 
